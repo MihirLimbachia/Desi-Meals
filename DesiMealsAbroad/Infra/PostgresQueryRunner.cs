@@ -2,7 +2,7 @@
 using Npgsql;
 using System.Data;
 
-namespace DesiMealsAbroad.Postgres
+namespace DesiMealsAbroad.Infra
 {
     public class PostgresQueryRunner
     {

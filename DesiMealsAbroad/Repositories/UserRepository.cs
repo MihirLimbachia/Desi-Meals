@@ -1,0 +1,80 @@
+﻿using Npgsql;
+using System;
+using System.Data;
+using System.Linq;
+using DesiMealsAbroad.DTO;
+using DesiMealsAbroad.Infra;
+public class UserRepository
+{
+    private readonly PostgresQueryRunner _queryRunner;
+
+    public UserRepository(PostgresQueryRunner queryRunner)
+    {
+        _queryRunner = queryRunner;
+    }
+
+    public void AddUser(ApplicationUser user)
+    {
+        // Define your SQL INSERT statement
+        string sql = "INSERT INTO Users (Name, Email, PhoneNumber, Address) VALUES (@Name, @Email, @PhoneNumber, @Address)";
+        var parameters = new NpgsqlParameter[]
+        {
+                new NpgsqlParameter("@Name", user.PersonName),
+                new NpgsqlParameter("@Email", user.Email),
+                new NpgsqlParameter("@PhoneNumber", user.PhoneNumber),
+                new NpgsqlParameter("@Address", user.Address),
+  
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+    }
+
+    public void UpdateUser(ApplicationUser user)
+    {
+        string sql = "UPDATE Users SET Name = @Name, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address, PasswordHash = @PasswordHash WHERE UserId = @UserId";
+
+        var parameters = new NpgsqlParameter[]
+        {
+                new NpgsqlParameter("@Name", user.PersonName),
+                new NpgsqlParameter("@Email", user.Email),
+                new NpgsqlParameter("@PhoneNumber", user.PhoneNumber),
+                new NpgsqlParameter("@Address", user.Address)
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+    }
+
+    public void DeleteUser(int userId)
+    {
+        string sql = "DELETE FROM Users WHERE UserId = @UserId";
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@UserId", userId)
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);   
+    }
+
+    public ApplicationUser? GetUserById(int userId)
+    {
+        string sql = "SELECT * FROM Users WHERE UserId = @UserId";
+ 
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@UserId", userId)
+        };
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
+        if (dataTable.Rows.Count > 0)
+        {
+            var row = dataTable.Rows[0];
+            return new ApplicationUser
+            {
+                Id = (Guid)row["UserId"],
+                PersonName = row["Name"].ToString(),
+                Email = row["Email"].ToString(),
+                PhoneNumber = row["PhoneNumber"].ToString(),
+                Address = row["Address"].ToString(),
+            };
+        }
+        else
+        {
+            return null;
+        }
+    }
+}
+

@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using DesiMealsAbroad.Postgres;
+﻿using Microsoft.AspNetCore.Mvc;
+using DesiMealsAbroad.Infra;
 using DesiMealsAbroad.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Metadata;
 using System.Data;
+using Microsoft.AspNetCore.Authorization;
+
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 
 [Route("api/inventory")]
+[Authorize]
 [ApiController]
 public class InventoryController : ControllerBase
 {
