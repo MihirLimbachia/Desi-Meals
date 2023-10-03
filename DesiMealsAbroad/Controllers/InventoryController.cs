@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using DesiMealsAbroad.Infra;
 using DesiMealsAbroad.Models;
+using DesiMealsAbroad.DTO;
 using System.Data;
 using Microsoft.AspNetCore.Authorization;
+using Npgsql;
 
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -54,6 +56,39 @@ public class InventoryController : ControllerBase
             return StatusCode(500, $"Internal server error while getting dishes: {ex.Message}");
         }
     }
+
+    [HttpPost("dishes")] // Define a route for the POST endpoint to create a new dish
+    public IActionResult CreateDish([FromBody] AddDishDTO dish)
+    {
+        try
+        {
+            // Validate the incoming dish object (you can add more validation as needed)
+            if (dish == null)
+            {
+                return BadRequest("Invalid dish data");
+            }
+
+            // Construct an SQL query to insert the new dish into the database
+            string sqlQuery = "INSERT INTO public.dishes (name, description, price) VALUES (@Name, @Description, @Price)";
+
+            // Create an array of NpgsqlParameters to pass values to the SQL query
+            NpgsqlParameter[] parameters = new NpgsqlParameter[]
+            {
+            new NpgsqlParameter("@Name", dish.Name),
+            new NpgsqlParameter("@Description", dish.Description),
+            new NpgsqlParameter("@Price", dish.Price)
+            };
+
+            // Execute the SQL query to insert the new dish
+            _postgresQueryRunner.ExecuteNonQuery(sqlQuery, parameters);
+
+            // Optionally, you can return the newly created dish or a success message
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error while creating a dish: {ex.Message}");
+        }
+    }
+
 }
-
-

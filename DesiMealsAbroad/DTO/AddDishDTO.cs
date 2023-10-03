@@ -1,15 +1,11 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DesiMealsAbroad.Models
+namespace DesiMealsAbroad.DTO
 {
-    public class Dish
-    {
-        
-        public int ID { get; set; }
-
+	public class AddDishDTO
+	{
         [Required]
         [MaxLength(255)]
         public string Name { get; set; }
@@ -21,7 +17,6 @@ namespace DesiMealsAbroad.Models
         [Required]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Price { get; set; }
-
     }
 }
 
