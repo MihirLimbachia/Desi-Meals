@@ -17,6 +17,17 @@ namespace DesiMealsAbroad.DTO
         [Required]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Price { get; set; }
+
+        [Required]
+        [MaxLength(10000)]
+        public string ImgUrl { get; set; }
+
+        [Required]
+        public List<string> Ingredients { get; set; }
+
+        [Required]
+        public decimal Calories { get; set; }
+
     }
 }
 

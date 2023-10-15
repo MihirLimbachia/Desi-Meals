@@ -11,7 +11,6 @@ using Npgsql;
 
 
 [Route("api/inventory")]
-[Authorize]
 [ApiController]
 public class InventoryController : ControllerBase
 {
@@ -38,12 +37,18 @@ public class InventoryController : ControllerBase
             foreach (DataRow row in result.Rows)
             {
                 // Access data in the row as needed
+                List<string> ingredients = row["ingredients"].ToString().Split(",", StringSplitOptions.RemoveEmptyEntries)
+                                       .Select(s => s.Trim()) // Optional: trim spaces
+                                       .ToList();
                 var dish = new Dish
                 {
                     ID = Convert.ToInt32(row["dishid"]),
                     Name = row["name"].ToString(),
                     Description = row["description"].ToString(),
-                    Price = Convert.ToDecimal(row["price"]) 
+                    ImgUrl = row["imgUrl"].ToString(),
+                    Price = Convert.ToDecimal(row["price"]) ,
+                    Calories = Convert.ToDecimal(row["calories"]),
+                    Ingredients = ingredients
                 };
                 dishes.Add(dish);
             }
@@ -67,16 +72,21 @@ public class InventoryController : ControllerBase
             {
                 return BadRequest("Invalid dish data");
             }
-
+            string ingredientsString = string.Join(",", dish.Ingredients);
             // Construct an SQL query to insert the new dish into the database
-            string sqlQuery = "INSERT INTO public.dishes (name, description, price) VALUES (@Name, @Description, @Price)";
+            string sqlQuery = "INSERT INTO public.dishes (name, description, price, imgUrl, calories, ingredients) VALUES (@Name, @Description, @Price,  @ImgUrl, @Calories, " +
+                "@Ingredients)";
 
             // Create an array of NpgsqlParameters to pass values to the SQL query
             NpgsqlParameter[] parameters = new NpgsqlParameter[]
             {
             new NpgsqlParameter("@Name", dish.Name),
             new NpgsqlParameter("@Description", dish.Description),
-            new NpgsqlParameter("@Price", dish.Price)
+            new NpgsqlParameter("@Price", dish.Price),
+            new NpgsqlParameter("@ImgUrl", dish.ImgUrl),
+            new NpgsqlParameter("@Calories", dish.Calories),
+            new NpgsqlParameter("@Ingredients", ingredientsString)
+
             };
 
             // Execute the SQL query to insert the new dish
