@@ -22,14 +22,13 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("register")]
-    public IActionResult RegisterUser([FromBody] ApplicationUser user)
+    public IActionResult RegisterUser([FromBody] RegisterUserDTO user)
     {
         _userRepository.AddUser(user);
 
         // Generate a JWT token for the registered user
-        var authenticationRespose = _jwtService.createToken(user);
 
-        return Ok(authenticationRespose);
+        return NoContent();
     }
 }
 

@@ -13,24 +13,26 @@ public class UserRepository
         _queryRunner = queryRunner;
     }
 
-    public void AddUser(ApplicationUser user)
+    public void AddUser(RegisterUserDTO user)
     {
         // Define your SQL INSERT statement
-        string sql = "INSERT INTO Users (Name, Email, PhoneNumber, Address) VALUES (@Name, @Email, @PhoneNumber, @Address)";
+        string sql = "INSERT INTO Users (Name, Email, PhoneNumber, Address, Password) VALUES (@Name, @Email, @PhoneNumber, @Address, @Password)";
+        string hashedPassword = PasswordHasher.HashPassword(user.Password);
         var parameters = new NpgsqlParameter[]
         {
-                new NpgsqlParameter("@Name", user.PersonName),
+                new NpgsqlParameter("@Name", user.Name),
                 new NpgsqlParameter("@Email", user.Email),
-                new NpgsqlParameter("@PhoneNumber", user.PhoneNumber),
+                new NpgsqlParameter("@PhoneNumber", user.Phone),
                 new NpgsqlParameter("@Address", user.Address),
-  
+                 new NpgsqlParameter("@Password", hashedPassword),
+
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
     }
 
     public void UpdateUser(ApplicationUser user)
     {
-        string sql = "UPDATE Users SET Name = @Name, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address, PasswordHash = @PasswordHash WHERE UserId = @UserId";
+        string sql = "UPDATE Users SET Name = @Name, Email = @Email, PhoneNumber = @PhoneNumber, Address = @Address WHERE UserId = @UserId";
 
         var parameters = new NpgsqlParameter[]
         {
