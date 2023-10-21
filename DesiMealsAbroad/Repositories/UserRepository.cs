@@ -36,7 +36,7 @@ public class UserRepository
 
         var parameters = new NpgsqlParameter[]
         {
-                new NpgsqlParameter("@Name", user.PersonName),
+                new NpgsqlParameter("@Name", user.Name),
                 new NpgsqlParameter("@Email", user.Email),
                 new NpgsqlParameter("@PhoneNumber", user.PhoneNumber),
                 new NpgsqlParameter("@Address", user.Address)
@@ -53,12 +53,12 @@ public class UserRepository
         _queryRunner.ExecuteNonQuery(sql, parameters);   
     }
 
-    public ApplicationUser? GetUserById(int userId)
+    public ApplicationUser? GetUserByEmail(string email)
     {
-        string sql = "SELECT * FROM Users WHERE UserId = @UserId";
+        string sql = "SELECT * FROM Users WHERE email = @Email";
  
         var parameters = new NpgsqlParameter[] {
-            new NpgsqlParameter("@UserId", userId)
+            new NpgsqlParameter("@Email", email)
         };
         DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
         if (dataTable.Rows.Count > 0)
@@ -67,7 +67,8 @@ public class UserRepository
             return new ApplicationUser
             {
                 Id = (Guid)row["UserId"],
-                PersonName = row["Name"].ToString(),
+                Name = row["Name"].ToString(),
+                Password = row["Password"].ToString(),
                 Email = row["Email"].ToString(),
                 PhoneNumber = row["PhoneNumber"].ToString(),
                 Address = row["Address"].ToString(),

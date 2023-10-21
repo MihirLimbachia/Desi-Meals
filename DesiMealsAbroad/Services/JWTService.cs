@@ -37,7 +37,7 @@ namespace DesiMealsAbroad.Services
             var authResponse = new AuthenticationRespose
             {
                 Email = user.Email,
-                PersonName = user.PersonName,
+                PersonName = user.Name,
                 Expiration = expirationTime,
                 Token = token
             };

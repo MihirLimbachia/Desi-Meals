@@ -30,5 +30,32 @@ public class UserController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPost("login")]
+    public IActionResult LoginUser([FromBody] LoginUserDTO userDTO)
+    {
+        ApplicationUser? user = _userRepository.GetUserByEmail(userDTO.Email);
+
+        if (user == null)
+        {
+            
+            return BadRequest("User not registered");
+        }
+
+        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(userDTO.Password, user.Password);
+
+        if (isPasswordValid)
+        {
+
+            AuthenticationRespose authResponse = _jwtService.createToken(user);
+            return Ok(authResponse);
+        }
+        else
+        {
+          
+            return Unauthorized("Incorrect password");
+        }
+    }
+
 }
 
