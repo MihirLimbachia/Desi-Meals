@@ -1,10 +1,15 @@
 ﻿using System;
 using DesiMealsAbroad.DTO;
+using DesiMealsAbroad.Models;
 using DesiMealsAbroad.Infra;
 using Npgsql;
 using System.Data;
 using Newtonsoft.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Http;
 
 namespace DesiMealsAbroad.Repositories;
 
@@ -55,7 +60,9 @@ public class OrdersRepository
     {
        
         decimal orderTotal = CalculateOrderTotal(cartItems);
-        string sql = "INSERT INTO orders (order_id, email, order_date, total_amount, status) VALUES (@OrderId, @Email, @OrderDate,@Amount,@Status)";
+        List<OrderItem> orderItems = convertCartItemsToOrderItems(orderId, cartItems);
+        string orderItemsJson = JsonConvert.SerializeObject(orderItems);
+        string sql = "INSERT INTO orders (order_id, email, order_date, total_amount, status, order_items) VALUES (@OrderId, @Email, @OrderDate,@Amount,@Status, @OrderItems::jsonb)";
         var parameters = new NpgsqlParameter[]
         {
             new NpgsqlParameter("@OrderId", orderId),
@@ -63,9 +70,28 @@ public class OrdersRepository
             new NpgsqlParameter("@Amount", orderTotal),
             new NpgsqlParameter("@status", "CREATED"),
             new NpgsqlParameter("@OrderDate", DateTime.UtcNow),
-
+            new NpgsqlParameter("@OrderItems", orderItemsJson),
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
+    }
+
+    public List<OrderItem> convertCartItemsToOrderItems (Guid orderId, List<CartItemDTO> cartItems)
+    {
+        List<OrderItem> orderItems= new List<OrderItem>();
+
+        foreach (CartItemDTO item in cartItems)
+        {
+            var orderItem =  new OrderItem {
+            OrderId = orderId,
+            ItemId = item.Item.ID,
+            Quantity = item.Quantity,
+            Name = item.Item.Name,
+            Price  = item.Item.Price,
+            ImgUrl = item.Item.ImgUrl
+            };
+            orderItems.Add(orderItem);
+        }
+        return orderItems;
     }
 
     public void populateOrderItems(Guid orderId, List<CartItemDTO> cartItems)
@@ -101,6 +127,42 @@ public class OrdersRepository
             var row = dataTable.Rows[0];
             List<CartItemDTO> items = JsonConvert.DeserializeObject<List<CartItemDTO>>(row["lineitems"].ToString());
             return items;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public List<Order>? GetOrders(string email, DateTime startDate, DateTime endDate)
+    {
+        string sql = "SELECT * FROM orders WHERE email = @Email and order_date >= @StartDate and order_date<= @EndDate";
+
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@Email", email),
+            new NpgsqlParameter("@StartDate", startDate),
+            new NpgsqlParameter("@EndDate", endDate)
+        };
+
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
+        List<Order> orders = new List<Order>();
+        if (dataTable.Rows.Count > 0)
+        {
+            foreach (DataRow row in dataTable.Rows)
+            {
+                Guid orderId = new Guid(row["order_id"].ToString());
+                var order = new Order
+                {
+                    OrderId = orderId,
+                    Email = row["email"].ToString(),
+                    Status = row["status"].ToString(),
+                    OrderDate = DateTime.Parse(row["order_date"].ToString()),
+                    TotalAmount = (decimal)row["total_amount"],
+                    OrderItems = JsonConvert.DeserializeObject<List<OrderItem>>(row["order_items"].ToString())
+                };
+                orders.Add(order);
+            }
+            return orders;
         }
         else
         {

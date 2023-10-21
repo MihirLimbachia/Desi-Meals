@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Azure.Core;
-using DesiMealsAbroad.DTO;
+﻿using DesiMealsAbroad.DTO;
+using DesiMealsAbroad.Models;
 using DesiMealsAbroad.ServiceContracts;
 using DesiMealsAbroad.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -35,18 +31,25 @@ public class OrdersController : Controller
     [HttpPost("createOrder")]
     public IActionResult CreateOrder([FromBody] PostOrdersDTO postOrdersDTO)
     {
-        // You can use the Stripe API to retrieve payment details based on session_id
-
+      
         Guid orderId = Guid.NewGuid();
-        List<CartItemDTO> cartItems = _ordersRepository.GetPaymentSessionOrderItems(postOrdersDTO.sessionId);
+        List<CartItemDTO>? cartItems = _ordersRepository.GetPaymentSessionOrderItems(postOrdersDTO.sessionId);
         if (cartItems != null) {
 
             _ordersRepository.createOrder(postOrdersDTO.Email, orderId, cartItems);
             _ordersRepository.populateOrderItems(orderId, cartItems);
 
         } 
-        // Return a response to the frontend
         return Ok(new { orderId });
+    }
+
+    [HttpGet("listOrders")]
+    public IActionResult getOrder([FromQuery] GetOrdersDTO getOrdersDTO)
+    {
+       
+        List<Order>? cartItems = _ordersRepository.GetOrders(getOrdersDTO.Email, getOrdersDTO.StartDate, getOrdersDTO.EndDate);
+     
+        return Ok(cartItems);
     }
 }
 
