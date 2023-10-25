@@ -134,6 +134,38 @@ public class OrdersRepository
         }
     }
 
+    public void UpdateCartItems(string email, List<CartItemDTO> cartItems)
+    {
+        string sql = "UPDATE users set cart_items = @cartItemsJSON::jsonb WHERE email = @Email";
+        string cartItemsJson = JsonConvert.SerializeObject(cartItems);
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@Email", email),
+            new NpgsqlParameter("@cartItemsJSON", cartItemsJson)
+        };
+
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+    }
+
+    public List<CartItemDTO>? GetCartItems(string email)
+    {
+        string sql = "select cart_items from users WHERE email = @Email";
+        
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@Email", email),
+        };
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
+        if (dataTable.Rows.Count > 0)
+        {
+
+            var row = dataTable.Rows[0];
+            List<CartItemDTO> items = JsonConvert.DeserializeObject<List<CartItemDTO>>(row["cart_items"].ToString());
+            return items;
+        }
+
+        return null;
+    
+    }
+
     public List<Order>? GetOrders(string email, DateTime startDate, DateTime endDate)
     {
         string sql = "SELECT * FROM orders WHERE email = @Email and order_date >= @StartDate and order_date<= @EndDate";

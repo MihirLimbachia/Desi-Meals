@@ -10,11 +10,9 @@ namespace DesiMealsAbroad.Controllers;
 
 
 [ApiController]
-[Route("api/orders")]
+[Route("api/")]
 public class OrdersController : Controller
 {
-
-
     private readonly ILogger<UserController> _logger;
     private readonly IJWTService _jwtService;
     private readonly OrdersRepository _ordersRepository;
@@ -26,9 +24,7 @@ public class OrdersController : Controller
         _ordersRepository = ordersRepository;
     }
 
-   
-
-    [HttpPost("createOrder")]
+    [HttpPost("orders/createOrder")]
     public IActionResult CreateOrder([FromBody] PostOrdersDTO postOrdersDTO)
     {
       
@@ -43,12 +39,36 @@ public class OrdersController : Controller
         return Ok(new { orderId });
     }
 
-    [HttpGet("listOrders")]
+    [HttpPost("cart/updateCartItems")]
+    public IActionResult UpdateCartItems([FromBody] UpdateCartItems updateCartItems)
+    {
+
+        Guid orderId = Guid.NewGuid();
+        try
+        {
+            _ordersRepository.UpdateCartItems(updateCartItems.Email, updateCartItems.CartItems);
+            return Ok(true);
+        }
+        catch(Exception exception) {
+            return StatusCode(500, new { error = "An error occurred while updating cart items "+ exception.Message });
+        }   
+    }
+
+    [HttpGet("orders/listOrders")]
     public IActionResult getOrder([FromQuery] GetOrdersDTO getOrdersDTO)
     {
        
         List<Order>? cartItems = _ordersRepository.GetOrders(getOrdersDTO.Email, getOrdersDTO.StartDate, getOrdersDTO.EndDate);
      
+        return Ok(cartItems);
+    }
+
+    [HttpGet("cart/getCartItems")]
+    public IActionResult getCartItems([FromQuery] string email )
+    {
+
+        List<CartItemDTO>? cartItems = _ordersRepository.GetCartItems(email);
+
         return Ok(cartItems);
     }
 }
