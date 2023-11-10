@@ -56,13 +56,27 @@ public class OrdersRepository
     }
 
 
-    public void createOrder(string email, Guid orderId, List<CartItemDTO> cartItems)
+    public Guid createOrder(string email, Guid orderId, List<CartItemDTO> cartItems, string sessionId)
     {
        
         decimal orderTotal = CalculateOrderTotal(cartItems);
         List<OrderItem> orderItems = convertCartItemsToOrderItems(orderId, cartItems);
+
+        string sql1 = "select order_id from orders where session_id=@SessionId";
+        var parameters1 = new NpgsqlParameter[]
+       {
+            new NpgsqlParameter("@SessionId", sessionId),
+       };
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql1, parameters1);
+        if (dataTable.Rows.Count > 0)
+        {
+
+            var row = dataTable.Rows[0];
+            Guid existingOrderId = new Guid(row["order_id"].ToString());
+            return existingOrderId;
+        }
         string orderItemsJson = JsonConvert.SerializeObject(orderItems);
-        string sql = "INSERT INTO orders (order_id, email, order_date, total_amount, status, order_items) VALUES (@OrderId, @Email, @OrderDate,@Amount,@Status, @OrderItems::jsonb)";
+        string sql = "INSERT INTO orders (order_id, email, order_date, total_amount, status, order_items, session_id) VALUES (@OrderId, @Email, @OrderDate,@Amount,@Status, @OrderItems::jsonb, @SessionId)";
         var parameters = new NpgsqlParameter[]
         {
             new NpgsqlParameter("@OrderId", orderId),
@@ -71,8 +85,10 @@ public class OrdersRepository
             new NpgsqlParameter("@status", "CREATED"),
             new NpgsqlParameter("@OrderDate", DateTime.UtcNow),
             new NpgsqlParameter("@OrderItems", orderItemsJson),
+            new NpgsqlParameter("@SessionId", sessionId),
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
+        return orderId;
     }
 
     public List<OrderItem> convertCartItemsToOrderItems (Guid orderId, List<CartItemDTO> cartItems)

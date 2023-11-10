@@ -32,6 +32,14 @@ namespace DesiMealsAbroad.Models
         [Required]
         public decimal Calories { get; set; }
 
+        [Required]
+        [MaxLength(100)]
+        public string Origin { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string SpiceLevel { get; set; }
+
     }
 }
 

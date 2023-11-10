@@ -9,6 +9,7 @@ using DesiMealsAbroad.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
+builder.Services.AddSignalR();
 builder.Services.AddScoped<PostgresQueryRunner>(provider =>
 {
     string? connectionString = configuration.GetConnectionString("PostgresConnectionURL");
@@ -66,8 +67,9 @@ builder.Services.AddCors(options =>
         {
             builder.WithOrigins("http://localhost:4200") // Replace with your Angular app's URL
                    .AllowAnyMethod()
-                   .AllowAnyHeader();
-        });
+                   .AllowAnyHeader()
+                   .AllowCredentials();
+});
 });
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -79,6 +81,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("AllowMyAngularApp");
+app.MapHub<ChatHub>("/api/chat");
 app.MapControllers();
 app.Run();
 

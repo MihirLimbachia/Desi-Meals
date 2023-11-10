@@ -2,12 +2,14 @@
 using DesiMealsAbroad.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using DesiMealsAbroad.Models;
+using DesiMealsAbroad.Repositories;
 
 namespace DesiMealsAbroad.Controllers;
 
 [ApiController]
 [AllowAnonymous]
-[Route("/api/auth")]
+[Route("/api")]
 public class UserController : ControllerBase
 {
     private readonly ILogger<UserController> _logger;
@@ -21,7 +23,7 @@ public class UserController : ControllerBase
         _userRepository = userRepository;
     }
 
-    [HttpPost("register")]
+    [HttpPost("auth/register")]
     public IActionResult RegisterUser([FromBody] RegisterUserDTO user)
     {
         _userRepository.AddUser(user);
@@ -31,7 +33,27 @@ public class UserController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("login")]
+    [HttpGet("user/shipping-info")]
+    public IActionResult GetShippingInformation([FromQuery] string email)
+    {
+        ApplicationUser? user = _userRepository.GetUserByEmail(email);
+
+        if (user == null)
+        {
+            return BadRequest("User not found");
+        }
+
+        return Ok(new UserData
+        { 
+            Name = user.Name,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            Address = user.Address
+        });
+    }
+
+    
+    [HttpPost("auth/login")]
     public IActionResult LoginUser([FromBody] LoginUserDTO userDTO)
     {
         ApplicationUser? user = _userRepository.GetUserByEmail(userDTO.Email);

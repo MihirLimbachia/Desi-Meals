@@ -32,11 +32,12 @@ public class OrdersController : Controller
         List<CartItemDTO>? cartItems = _ordersRepository.GetPaymentSessionOrderItems(postOrdersDTO.sessionId);
         if (cartItems != null) {
 
-            _ordersRepository.createOrder(postOrdersDTO.Email, orderId, cartItems);
-            _ordersRepository.populateOrderItems(orderId, cartItems);
-
+            Guid createdOrderId = _ordersRepository.createOrder(postOrdersDTO.Email, orderId, cartItems, postOrdersDTO.sessionId);
+            if (createdOrderId == orderId) _ordersRepository.populateOrderItems(orderId, cartItems);
+            orderId = createdOrderId;
+            return Ok(new{ orderId }) ;
         } 
-        return Ok(new { orderId });
+        return Ok(null);
     }
 
     [HttpPost("cart/updateCartItems")]

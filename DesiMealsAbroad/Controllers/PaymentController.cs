@@ -24,7 +24,7 @@ public class PaymentController : ControllerBase
         _stripePaymentService = new StripePaymentService();
     }
 
-    [HttpPost]
+    [HttpPost("orders")]
     public IActionResult CreateCheckoutSession([FromBody] PostPaymentsDTO postPaymentsDTO)
     {
         List<CartItemDTO> items = postPaymentsDTO.CartItems;
@@ -33,6 +33,20 @@ public class PaymentController : ControllerBase
             var sessionId = _stripePaymentService.CreateCheckoutSession(items);
             _ordersRepository.AddPaymentSessionOrderItems(postPaymentsDTO, sessionId);
 
+            return Ok(new { sessionId });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("subscriptions")]
+    public IActionResult CreateSubscriptionCheckoutSession([FromBody] PostCheckoutSessionDTO postCheckoutSessionDTO)
+    {
+        try
+        {
+            var sessionId = _stripePaymentService.CreateSubscriptionCheckoutSession(postCheckoutSessionDTO.Email, postCheckoutSessionDTO.subscription);
             return Ok(new { sessionId });
         }
         catch (Exception ex)

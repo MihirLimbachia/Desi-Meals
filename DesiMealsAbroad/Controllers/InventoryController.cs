@@ -33,12 +33,11 @@ public class InventoryController : ControllerBase
             List<Dish> dishes = new List<Dish>();
             var result = _postgresQueryRunner.ExecuteQuery(sqlQuery);
 
-            // Process the result, which is a DataTable containing the retrieved data
             foreach (DataRow row in result.Rows)
             {
-                // Access data in the row as needed
+               
                 List<string> ingredients = row["ingredients"].ToString().Split(",", StringSplitOptions.RemoveEmptyEntries)
-                                       .Select(s => s.Trim()) // Optional: trim spaces
+                                       .Select(s => s.Trim()) 
                                        .ToList();
                 var dish = new Dish
                 {
@@ -48,7 +47,10 @@ public class InventoryController : ControllerBase
                     ImgUrl = row["imgUrl"].ToString(),
                     Price = Convert.ToDecimal(row["price"]) ,
                     Calories = Convert.ToDecimal(row["calories"]),
-                    Ingredients = ingredients
+                    Ingredients = ingredients,
+                    Origin = row["origin"].ToString(),
+                    SpiceLevel = row["spice_level"].ToString()
+                     
                 };
                 dishes.Add(dish);
             }
@@ -59,6 +61,44 @@ public class InventoryController : ControllerBase
         catch (Exception ex)
         { 
             return StatusCode(500, $"Internal server error while getting dishes: {ex.Message}");
+        }
+    }
+
+
+    // GET api/inventory/subscriptions
+    [HttpGet("subscriptions")] // Define a route for the GET endpoint to retrieve subscriptions
+    public IActionResult GetSubscriptions()
+    {
+        try
+        {
+            string sqlQuery = "SELECT * FROM public.subscription";
+            List<Subscription> subscriptions = new List<Subscription>();
+            var result = _postgresQueryRunner.ExecuteQuery(sqlQuery);
+
+            foreach (DataRow row in result.Rows)
+            {
+                var subscription = new Subscription
+                {
+                    Id = Guid.Parse(row["id"].ToString()),
+                    Name = row["name"].ToString(),
+                    Description = row["description"].ToString(),
+                    NoOfMeals = row["no_of_meals"] != DBNull.Value ? Convert.ToInt32(row["no_of_meals"]) : (int?)null,
+                    ImgUrl = row["imgurl"].ToString(),
+                    Price = row["price"] != DBNull.Value ? Convert.ToDecimal(row["price"]) : (decimal?)null,
+                    Duration = row["duration"].ToString(),
+                    SubscriptionType = row["subscription_type"].ToString(),
+                    Contents = row["contents"].ToString()
+                };
+
+                subscriptions.Add(subscription);
+            }
+
+            // Return the list of subscriptions as a JSON response
+            return Ok(subscriptions);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error while getting subscriptions: {ex.Message}");
         }
     }
 

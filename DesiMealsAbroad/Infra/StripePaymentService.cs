@@ -3,6 +3,7 @@ using Stripe;
 using Stripe.Checkout;
 using DesiMealsAbroad.DTO;
 using System.Collections.Generic;
+using DesiMealsAbroad.Models;
 
 public class StripePaymentService
 {
@@ -50,5 +51,60 @@ public class StripePaymentService
 
         return session.Id;
     }
+
+    public async Task<string> CreateSubscriptionCheckoutSession(string email, DesiMealsAbroad.Models.Subscription subscription)
+    {
+        var customerOptions = new CustomerCreateOptions
+        {
+            Email = email,
+            Description = $"Customer for {email}",
+        };
+
+        var customerService = new CustomerService();
+        var customer = await customerService.CreateAsync(customerOptions);
+        var productOptions = new ProductCreateOptions
+        {
+            Name = subscription.Name,
+            Type = "good",
+        };
+
+        var productService = new ProductService();
+        var product = await productService.CreateAsync(productOptions);
+        var priceOptions = new PriceCreateOptions
+        {
+            Product = product.Id,
+            UnitAmountDecimal = subscription.Price * 100,
+            Currency = "usd",
+            Recurring = new PriceRecurringOptions
+            {
+                Interval = "month",
+            },
+        };
+        var priceService = new PriceService();
+        var price = await priceService.CreateAsync(priceOptions);
+        var options = new SessionCreateOptions
+        {
+            Customer = customer.Id,
+            PaymentMethodTypes = new List<string> { "card" },
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
+                {
+                    Price = price.Id,
+                    Quantity = 1,
+                },
+            },
+            Mode = "subscription",
+            SuccessUrl = "http://localhost:4200/payment-success?session_id={CHECKOUT_SESSION_ID}",
+            CancelUrl = "https://localhost:4200/payment-failure", 
+        };
+
+        var sessionService = new SessionService();
+        var session = await sessionService.CreateAsync(options);
+        return session.Id;
+
+
+    }
+
 
 }
