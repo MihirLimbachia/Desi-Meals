@@ -4,19 +4,20 @@ using System.Data;
 using System.Linq;
 using DesiMealsAbroad.DTO;
 using DesiMealsAbroad.Infra;
+using Stripe;
+
 public class UserRepository
 {
     private readonly PostgresQueryRunner _queryRunner;
 
-    public UserRepository(PostgresQueryRunner queryRunner)
+    public UserRepository(PostgresQueryRunner queryRunner )
     {
         _queryRunner = queryRunner;
     }
 
-    public void AddUser(RegisterUserDTO user)
+    public void AddUser(RegisterUserDTO user, string stripeCustomerId)
     {
-        // Define your SQL INSERT statement
-        string sql = "INSERT INTO Users (Name, Email, PhoneNumber, Address, Password) VALUES (@Name, @Email, @PhoneNumber, @Address, @Password)";
+        string sql = "INSERT INTO Users (Name, Email, PhoneNumber, Address, Password, stripe_customer_id) VALUES (@Name, @Email, @PhoneNumber, @Address, @Password, @Stripe_Customer_Id)";
         string hashedPassword = PasswordHasher.HashPassword(user.Password);
         var parameters = new NpgsqlParameter[]
         {
@@ -24,8 +25,8 @@ public class UserRepository
                 new NpgsqlParameter("@Email", user.Email),
                 new NpgsqlParameter("@PhoneNumber", user.Phone),
                 new NpgsqlParameter("@Address", user.Address),
-                 new NpgsqlParameter("@Password", hashedPassword),
-
+                new NpgsqlParameter("@Password", hashedPassword),
+                new NpgsqlParameter("@Stripe_Customer_Id", stripeCustomerId)
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
     }
@@ -72,6 +73,7 @@ public class UserRepository
                 Email = row["Email"].ToString(),
                 PhoneNumber = row["PhoneNumber"].ToString(),
                 Address = row["Address"].ToString(),
+                StripeCustomerId = row["stripe_customer_id"].ToString(),
             };
         }
         else

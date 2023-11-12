@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using DesiMealsAbroad.Models;
 using DesiMealsAbroad.Repositories;
+using Stripe;
+using DesiMealsAbroad.Infra;
 
 namespace DesiMealsAbroad.Controllers;
 
@@ -15,18 +17,22 @@ public class UserController : ControllerBase
     private readonly ILogger<UserController> _logger;
     private readonly IJWTService _jwtService;
     private readonly UserRepository _userRepository;
+    private StripePaymentService _stripePaymentService;
 
     public UserController(ILogger<UserController> logger, IJWTService jwtService, UserRepository userRepository)
     {
         _logger = logger;
         _jwtService = jwtService;
         _userRepository = userRepository;
+        _stripePaymentService = new StripePaymentService();
     }
 
     [HttpPost("auth/register")]
     public IActionResult RegisterUser([FromBody] RegisterUserDTO user)
     {
-        _userRepository.AddUser(user);
+         string stripe_customerId = _stripePaymentService.CreateCustomer(user.Email);
+        _userRepository.AddUser(user, stripe_customerId);
+      
 
         // Generate a JWT token for the registered user
 

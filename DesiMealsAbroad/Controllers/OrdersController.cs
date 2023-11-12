@@ -3,11 +3,7 @@ using DesiMealsAbroad.Models;
 using DesiMealsAbroad.ServiceContracts;
 using DesiMealsAbroad.Repositories;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace DesiMealsAbroad.Controllers;
-
 
 [ApiController]
 [Route("api/")]
@@ -38,6 +34,18 @@ public class OrdersController : Controller
             return Ok(new{ orderId }) ;
         } 
         return Ok(null);
+    }
+
+
+    [HttpPost("orders/createSubscription")]
+    public IActionResult CreateSubscription([FromBody] PostSubscriptionDTO postSubscriptionDTO)
+    {
+
+        Guid subscriptionId = Guid.NewGuid();
+        Guid createdSubscriptionId = _ordersRepository.createSubscription(postSubscriptionDTO.Email, subscriptionId, postSubscriptionDTO.sessionId);
+        subscriptionId = createdSubscriptionId;
+        return Ok(new { subscriptionId });
+
     }
 
     [HttpPost("cart/updateCartItems")]

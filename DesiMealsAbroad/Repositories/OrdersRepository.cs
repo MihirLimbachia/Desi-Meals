@@ -91,6 +91,35 @@ public class OrdersRepository
         return orderId;
     }
 
+    public Guid createSubscription(string email, Guid subscriptionId,  string sessionId)
+    {
+
+        string sql1 = "select subscription_id from user_subscription where session_id=@SessionId";
+        var parameters1 = new NpgsqlParameter[]
+       {
+            new NpgsqlParameter("@SessionId", sessionId),
+       };
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql1, parameters1);
+        if (dataTable.Rows.Count > 0)
+        {
+
+            var row = dataTable.Rows[0];
+            Guid existingSubscriptionId = new Guid(row["subscription_id"].ToString());
+            return existingSubscriptionId;
+        }
+     
+        string sql = "INSERT INTO user_subscription (user_email, subscription_id, session_id, status) VALUES (@User_email, @Subscription_id, @SessionId, @Status)";
+        var parameters = new NpgsqlParameter[]
+        {
+            new NpgsqlParameter("@User_email", email),
+            new NpgsqlParameter("@Subscription_id", subscriptionId),
+            new NpgsqlParameter("@Status", "Active"),
+            new NpgsqlParameter("@SessionId", sessionId),
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+        return subscriptionId;
+    }
+
     public List<OrderItem> convertCartItemsToOrderItems (Guid orderId, List<CartItemDTO> cartItems)
     {
         List<OrderItem> orderItems= new List<OrderItem>();

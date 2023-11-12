@@ -12,6 +12,21 @@ public class StripePaymentService
         StripeConfiguration.ApiKey = "sk_test_51O2hmhHDd6RSPek2pUhp5hjiwWsLVAjZ65ZX1r9xaRdz3Js6OpAzyg1epUgftZGE3EdWGVoCEz6lLWpg6gwGX3U900BTPbRYhy";
     }
 
+
+    public string CreateCustomer(string email) {
+
+        var customerOptions = new CustomerCreateOptions
+        {
+            Email = email,
+            Description = $"Customer for {email}",
+        };
+
+        var customerService = new CustomerService();
+        var customer =  customerService.Create(customerOptions);
+        Console.WriteLine(customer);
+        return customer.Id;
+    }
+
     public string CreateCheckoutSession(List<CartItemDTO> items)
     {
       
@@ -42,8 +57,8 @@ public class StripePaymentService
             PaymentMethodTypes = new List<string> { "card" },
             LineItems = lineItems,
             Mode = "payment",
-            SuccessUrl = "http://localhost:4200/payment-success?session_id={CHECKOUT_SESSION_ID}", // Replace with your success URL
-            CancelUrl = "https://localhost:4200/payment-failure", // Replace with your cancel URL
+            SuccessUrl = "http://localhost:4200/payment-success?session_id={CHECKOUT_SESSION_ID}", 
+            CancelUrl = "https://localhost:4200/payment-failure",
         };
 
         var service = new SessionService();
@@ -52,16 +67,9 @@ public class StripePaymentService
         return session.Id;
     }
 
-    public async Task<string> CreateSubscriptionCheckoutSession(string email, DesiMealsAbroad.Models.Subscription subscription)
+    public async Task<string> CreateSubscriptionCheckoutSession(string customerId, string email, DesiMealsAbroad.Models.Subscription subscription)
     {
-        var customerOptions = new CustomerCreateOptions
-        {
-            Email = email,
-            Description = $"Customer for {email}",
-        };
-
-        var customerService = new CustomerService();
-        var customer = await customerService.CreateAsync(customerOptions);
+    
         var productOptions = new ProductCreateOptions
         {
             Name = subscription.Name,
@@ -84,7 +92,7 @@ public class StripePaymentService
         var price = await priceService.CreateAsync(priceOptions);
         var options = new SessionCreateOptions
         {
-            Customer = customer.Id,
+            Customer = customerId,
             PaymentMethodTypes = new List<string> { "card" },
             LineItems = new List<SessionLineItemOptions>
             {
@@ -95,8 +103,8 @@ public class StripePaymentService
                 },
             },
             Mode = "subscription",
-            SuccessUrl = "http://localhost:4200/payment-success?session_id={CHECKOUT_SESSION_ID}",
-            CancelUrl = "https://localhost:4200/payment-failure", 
+            SuccessUrl = "http://localhost:4200/subscription-success?session_id={CHECKOUT_SESSION_ID}",
+            CancelUrl = "https://localhost:4200/subscription-failure", 
         };
 
         var sessionService = new SessionService();
@@ -106,5 +114,19 @@ public class StripePaymentService
 
     }
 
+    public StripeList<Stripe.Subscription> GetSubscriptionsByUser(string customerId)
+    {
+
+        var subscriptionOptions = new SubscriptionListOptions
+        {
+            Customer = customerId,
+        };
+
+        var subscriptionService = new SubscriptionService();
+        StripeList<Stripe.Subscription> subscriptions = subscriptionService.List(subscriptionOptions);
+
+        return subscriptions;
+
+    }
 
 }
