@@ -51,6 +51,7 @@ public class PaymentController : ControllerBase
             var user = _userRepository.GetUserByEmail(postCheckoutSessionDTO.Email);
             string customerId = user.StripeCustomerId;
             var sessionId = _stripePaymentService.CreateSubscriptionCheckoutSession(customerId, postCheckoutSessionDTO.Email, postCheckoutSessionDTO.subscription);
+            _ordersRepository.AddSubscriptionPaymentSessionInformation(postCheckoutSessionDTO, sessionId);
             return Ok(new { sessionId });
         }
         catch (Exception ex)
@@ -59,19 +60,5 @@ public class PaymentController : ControllerBase
         }
     }
 
-    [HttpGet("subscriptions")]
-    public IActionResult getSubscriptionByEmail([FromQuery] string email)
-    {
-        try
-        {
-            var user = _userRepository.GetUserByEmail(email);
-            string customerId = user.StripeCustomerId;
-            var subscriptions = _stripePaymentService.GetSubscriptionsByUser(customerId);
-            return Ok(subscriptions);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
+   
 }

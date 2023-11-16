@@ -39,7 +39,21 @@ public class OrdersRepository
         _queryRunner.ExecuteNonQuery(sql, parameters);
     }
 
-     public decimal CalculateOrderTotal(List<CartItemDTO> items)
+
+    public void AddSubscriptionPaymentSessionInformation(PostCheckoutSessionDTO postCheckoutSessionDTO, string sessionId)
+    {
+     
+        string sql = "INSERT INTO subscription_payment_session (session_id, subscription_id) VALUES (@SessionId, @SubscriptionId)";
+        var parameters = new NpgsqlParameter[]
+        {
+            new NpgsqlParameter("@SessionId", sessionId),
+            new NpgsqlParameter("@SubscriptionId", postCheckoutSessionDTO.subscription.Id),
+
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+    }
+
+    public decimal CalculateOrderTotal(List<CartItemDTO> items)
     {
         decimal total = 0;
 
@@ -91,10 +105,10 @@ public class OrdersRepository
         return orderId;
     }
 
-    public Guid createSubscription(string email, Guid subscriptionId,  string sessionId)
+    public Guid createSubscription(string email, string subscriptionId,  string sessionId)
     {
 
-        string sql1 = "select subscription_id from user_subscription where session_id=@SessionId";
+        string sql1 = "select user_subscription_id from user_subscription where session_id=@SessionId";
         var parameters1 = new NpgsqlParameter[]
        {
             new NpgsqlParameter("@SessionId", sessionId),
@@ -104,20 +118,21 @@ public class OrdersRepository
         {
 
             var row = dataTable.Rows[0];
-            Guid existingSubscriptionId = new Guid(row["subscription_id"].ToString());
+            Guid existingSubscriptionId = new Guid(row["user_subscription_id"].ToString());
             return existingSubscriptionId;
         }
-     
-        string sql = "INSERT INTO user_subscription (user_email, subscription_id, session_id, status) VALUES (@User_email, @Subscription_id, @SessionId, @Status)";
+        Guid newSubscriptionId = Guid.NewGuid();
+        string sql = "INSERT INTO user_subscription (user_subscription_id, user_email, subscription_id, session_id, status) VALUES (@User_subscription_id,@User_email, @Subscription_id, @SessionId, @Status)";
         var parameters = new NpgsqlParameter[]
         {
+            new NpgsqlParameter("@User_subscription_id", newSubscriptionId),
             new NpgsqlParameter("@User_email", email),
             new NpgsqlParameter("@Subscription_id", subscriptionId),
             new NpgsqlParameter("@Status", "Active"),
             new NpgsqlParameter("@SessionId", sessionId),
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
-        return subscriptionId;
+        return newSubscriptionId;
     }
 
     public List<OrderItem> convertCartItemsToOrderItems (Guid orderId, List<CartItemDTO> cartItems)
@@ -172,6 +187,26 @@ public class OrdersRepository
             var row = dataTable.Rows[0];
             List<CartItemDTO> items = JsonConvert.DeserializeObject<List<CartItemDTO>>(row["lineitems"].ToString());
             return items;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public string? GetPaymentSessionSubscriptionId(string sessionId)
+    {
+        string sql = "SELECT subscription_id FROM subscription_payment_session WHERE session_id = @SessionId";
+
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@SessionId", sessionId)
+        };
+
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
+        if (dataTable.Rows.Count > 0)
+        {
+            var row = dataTable.Rows[0];
+            return row["subscription_id"].ToString();
         }
         else
         {
@@ -240,6 +275,68 @@ public class OrdersRepository
                 orders.Add(order);
             }
             return orders;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public List<UserSubscriptionDetails>? GetUserSubcriptions(string email)
+    {
+        string sql = "SELECT * FROM user_subscription WHERE user_email = @Email";
+
+        var parameters = new NpgsqlParameter[] {
+            new NpgsqlParameter("@Email", email)
+        };
+
+
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
+        List<UserSubscriptionDetails> subscriptions = new List<UserSubscriptionDetails>();
+        if (dataTable.Rows.Count > 0)
+        {
+            foreach (DataRow row in dataTable.Rows)
+            {
+                Guid id = new Guid(row["user_subscription_id"].ToString());
+                var subscription = new UserSubscription
+                {
+                    UserSubscriptionId = id,
+                    Status = row["status"].ToString(),
+                    CreatedAt = DateTime.Parse(row["created_at"].ToString()),
+                    SubscriptionId = row["subscription_id"].ToString()
+                    
+                };
+                string sqlQuery = "SELECT * FROM public.subscription where id = @SubscriptionId::uuid";
+                var parameters2 = new NpgsqlParameter[] {
+                    new NpgsqlParameter("@SubscriptionId", subscription.SubscriptionId)
+                };
+
+                var result = _queryRunner.ExecuteQuery(sqlQuery, parameters2);
+
+                var subscriptionRow = result.Rows[0];
+                
+                var subscriptionDetails = new UserSubscriptionDetails
+                {
+                    SubscriptionId = subscriptionRow["id"].ToString(),
+                    UserSubscriptionId = subscription.UserSubscriptionId,
+                    Status = subscription.Status,
+                    CreatedAt = subscription.CreatedAt,
+                    Name = subscriptionRow["name"].ToString(),
+                    NoOfMeals = subscriptionRow["no_of_meals"] != DBNull.Value ? Convert.ToInt32(subscriptionRow["no_of_meals"]) : (int?)null,
+                    ImgUrl = subscriptionRow["imgurl"].ToString(),
+                    Price = subscriptionRow["price"] != DBNull.Value ? Convert.ToDecimal(subscriptionRow["price"]) : (decimal?)null,
+                    SubscriptionType = subscriptionRow["subscription_type"].ToString(),
+                    
+                };
+
+                subscriptions.Add(subscriptionDetails);
+                
+
+               
+
+            }
+            return subscriptions;
+
         }
         else
         {

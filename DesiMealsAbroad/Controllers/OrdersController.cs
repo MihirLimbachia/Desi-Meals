@@ -41,9 +41,8 @@ public class OrdersController : Controller
     public IActionResult CreateSubscription([FromBody] PostSubscriptionDTO postSubscriptionDTO)
     {
 
-        Guid subscriptionId = Guid.NewGuid();
-        Guid createdSubscriptionId = _ordersRepository.createSubscription(postSubscriptionDTO.Email, subscriptionId, postSubscriptionDTO.sessionId);
-        subscriptionId = createdSubscriptionId;
+        string subscription = _ordersRepository.GetPaymentSessionSubscriptionId(postSubscriptionDTO.sessionId);
+        Guid subscriptionId = _ordersRepository.createSubscription(postSubscriptionDTO.Email, subscription, postSubscriptionDTO.sessionId);
         return Ok(new { subscriptionId });
 
     }
@@ -79,6 +78,20 @@ public class OrdersController : Controller
         List<CartItemDTO>? cartItems = _ordersRepository.GetCartItems(email);
 
         return Ok(cartItems);
+    }
+
+    [HttpGet("orders/subscriptions")]
+    public IActionResult getSubscriptionByEmail([FromQuery] string email)
+    {
+        try
+        {
+            var subscriptions = _ordersRepository.GetUserSubcriptions(email);
+            return Ok(subscriptions);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }
 

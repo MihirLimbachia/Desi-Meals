@@ -67,7 +67,7 @@ public class StripePaymentService
         return session.Id;
     }
 
-    public async Task<string> CreateSubscriptionCheckoutSession(string customerId, string email, DesiMealsAbroad.Models.Subscription subscription)
+    public string CreateSubscriptionCheckoutSession(string customerId, string email, DesiMealsAbroad.Models.Subscription subscription)
     {
     
         var productOptions = new ProductCreateOptions
@@ -77,7 +77,7 @@ public class StripePaymentService
         };
 
         var productService = new ProductService();
-        var product = await productService.CreateAsync(productOptions);
+        var product =  productService.Create(productOptions);
         var priceOptions = new PriceCreateOptions
         {
             Product = product.Id,
@@ -89,7 +89,7 @@ public class StripePaymentService
             },
         };
         var priceService = new PriceService();
-        var price = await priceService.CreateAsync(priceOptions);
+        var price = priceService.Create(priceOptions);
         var options = new SessionCreateOptions
         {
             Customer = customerId,
@@ -108,7 +108,7 @@ public class StripePaymentService
         };
 
         var sessionService = new SessionService();
-        var session = await sessionService.CreateAsync(options);
+        var session = sessionService.Create(options);
         return session.Id;
 
 
