@@ -25,5 +25,6 @@ public class UserSubscriptionDetails
     
     public string SubscriptionType { get; set; }
 
+    public string StripeProductId { get; set; }
 }
 

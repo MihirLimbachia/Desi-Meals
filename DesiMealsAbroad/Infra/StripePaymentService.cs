@@ -67,20 +67,46 @@ public class StripePaymentService
         return session.Id;
     }
 
+    public bool CancelSubsciption(string customerId, DesiMealsAbroad.Models.UserSubscriptionDetails subscription)
+    {
+        try
+        {
+          
+            var service = new SubscriptionService();
+            var subscriptions = service.List(new SubscriptionListOptions
+            {
+                Customer = customerId,
+                Status = "active",
+            });
+        
+            foreach (var sub in subscriptions)
+            {
+               
+                if (sub.Items?.Data.Any(item => item.Price.ProductId == subscription.StripeProductId) == true)
+                {
+                  
+                    var cancelOptions = new SubscriptionCancelOptions { };
+                    service.Cancel(sub.Id, cancelOptions);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            return false;
+        }
+    }
+
     public string CreateSubscriptionCheckoutSession(string customerId, string email, DesiMealsAbroad.Models.Subscription subscription)
     {
-    
-        var productOptions = new ProductCreateOptions
-        {
-            Name = subscription.Name,
-            Type = "good",
-        };
 
-        var productService = new ProductService();
-        var product =  productService.Create(productOptions);
+        var productId = subscription.StripeProductId;
         var priceOptions = new PriceCreateOptions
         {
-            Product = product.Id,
+            Product = productId,
             UnitAmountDecimal = subscription.Price * 100,
             Currency = "usd",
             Recurring = new PriceRecurringOptions
@@ -110,7 +136,6 @@ public class StripePaymentService
         var sessionService = new SessionService();
         var session = sessionService.Create(options);
         return session.Id;
-
 
     }
 

@@ -60,5 +60,22 @@ public class PaymentController : ControllerBase
         }
     }
 
-   
+    [HttpPost("cancel_subscription")]
+    public IActionResult CancelSubsription([FromBody] CancelSubscriptionDTO cancelSubscriptionDTO)
+    {
+        try
+        {
+            ApplicationUser user = _userRepository.GetUserByEmail(cancelSubscriptionDTO.Email);
+            string customerId = user.StripeCustomerId;
+            bool cancelled = _stripePaymentService.CancelSubsciption(customerId, cancelSubscriptionDTO.subscription);
+            _ordersRepository.inactivateSubscription(cancelSubscriptionDTO.Email, cancelSubscriptionDTO.subscription.SubscriptionId);
+            return Ok(cancelled);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+
 }

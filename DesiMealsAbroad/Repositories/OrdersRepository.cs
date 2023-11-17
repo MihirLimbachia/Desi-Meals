@@ -70,6 +70,20 @@ public class OrdersRepository
     }
 
 
+    public bool inactivateSubscription(string email, string subscriptionId)
+    {
+
+        string sql = "update user_subscription set status='inactive' where user_email=@Email and subscription_id = @SubscriptionId";
+        var parameters = new NpgsqlParameter[]
+       {
+            new NpgsqlParameter("@Email", email),
+            new NpgsqlParameter("@SubscriptionId", subscriptionId),
+       };
+       
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+        return true;
+    }
+
     public Guid createOrder(string email, Guid orderId, List<CartItemDTO> cartItems, string sessionId)
     {
        
@@ -229,7 +243,6 @@ public class OrdersRepository
     public List<CartItemDTO>? GetCartItems(string email)
     {
         string sql = "select cart_items from users WHERE email = @Email";
-        
         var parameters = new NpgsqlParameter[] {
             new NpgsqlParameter("@Email", email),
         };
@@ -241,21 +254,17 @@ public class OrdersRepository
             List<CartItemDTO> items = JsonConvert.DeserializeObject<List<CartItemDTO>>(row["cart_items"].ToString());
             return items;
         }
-
         return null;
-    
     }
 
     public List<Order>? GetOrders(string email, DateTime startDate, DateTime endDate)
     {
         string sql = "SELECT * FROM orders WHERE email = @Email and order_date >= @StartDate and order_date<= @EndDate";
-
         var parameters = new NpgsqlParameter[] {
             new NpgsqlParameter("@Email", email),
             new NpgsqlParameter("@StartDate", startDate),
             new NpgsqlParameter("@EndDate", endDate)
         };
-
         DataTable dataTable = _queryRunner.ExecuteQuery(sql, parameters);
         List<Order> orders = new List<Order>();
         if (dataTable.Rows.Count > 0)
@@ -303,7 +312,7 @@ public class OrdersRepository
                     UserSubscriptionId = id,
                     Status = row["status"].ToString(),
                     CreatedAt = DateTime.Parse(row["created_at"].ToString()),
-                    SubscriptionId = row["subscription_id"].ToString()
+                    SubscriptionId = row["subscription_id"].ToString(),
                     
                 };
                 string sqlQuery = "SELECT * FROM public.subscription where id = @SubscriptionId::uuid";
@@ -326,14 +335,10 @@ public class OrdersRepository
                     ImgUrl = subscriptionRow["imgurl"].ToString(),
                     Price = subscriptionRow["price"] != DBNull.Value ? Convert.ToDecimal(subscriptionRow["price"]) : (decimal?)null,
                     SubscriptionType = subscriptionRow["subscription_type"].ToString(),
-                    
+                    StripeProductId = subscriptionRow["stripe_product_id"].ToString()
                 };
 
                 subscriptions.Add(subscriptionDetails);
-                
-
-               
-
             }
             return subscriptions;
 

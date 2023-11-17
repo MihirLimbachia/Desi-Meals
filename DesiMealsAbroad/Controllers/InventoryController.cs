@@ -66,7 +66,7 @@ public class InventoryController : ControllerBase
 
 
     // GET api/inventory/subscriptions
-    [HttpGet("subscriptions")] // Define a route for the GET endpoint to retrieve subscriptions
+    [HttpGet("subscriptions")]
     public IActionResult GetSubscriptions()
     {
         try
@@ -87,7 +87,8 @@ public class InventoryController : ControllerBase
                     Price = row["price"] != DBNull.Value ? Convert.ToDecimal(row["price"]) : (decimal?)null,
                     Duration = row["duration"].ToString(),
                     SubscriptionType = row["subscription_type"].ToString(),
-                    Contents = row["contents"].ToString()
+                    Contents = row["contents"].ToString(),
+                    StripeProductId = row["stripe_product_id"].ToString()
                 };
 
                 subscriptions.Add(subscription);

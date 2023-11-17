@@ -11,4 +11,5 @@ public class Subscription
     public string Duration { get; set; }
     public string SubscriptionType { get; set; }
     public string Contents { get; set; }
+    public string StripeProductId { get; set; }
 }
