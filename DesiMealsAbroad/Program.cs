@@ -34,6 +34,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddTransient<IJWTService,JWTService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<OrdersRepository>();
+builder.Services.AddHostedService<OrderGenerationService>();
+builder.Services.AddLogging();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -65,7 +67,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowMyAngularApp",
         builder =>
         {
-            builder.WithOrigins("http://localhost:4200") // Replace with your Angular app's URL
+            builder.WithOrigins("http://localhost:4200")
                    .AllowAnyMethod()
                    .AllowAnyHeader()
                    .AllowCredentials();

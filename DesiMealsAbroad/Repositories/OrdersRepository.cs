@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
+using NpgsqlTypes;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DesiMealsAbroad.Repositories;
 
@@ -40,14 +42,14 @@ public class OrdersRepository
     }
 
 
-    public void AddSubscriptionPaymentSessionInformation(PostCheckoutSessionDTO postCheckoutSessionDTO, string sessionId)
+    public void AddSubscriptionPaymentSessionInformation(Guid subscriptionId, string sessionId)
     {
      
         string sql = "INSERT INTO subscription_payment_session (session_id, subscription_id) VALUES (@SessionId, @SubscriptionId)";
         var parameters = new NpgsqlParameter[]
         {
             new NpgsqlParameter("@SessionId", sessionId),
-            new NpgsqlParameter("@SubscriptionId", postCheckoutSessionDTO.subscription.Id),
+            new NpgsqlParameter("@SubscriptionId",subscriptionId)
 
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
@@ -73,11 +75,12 @@ public class OrdersRepository
     public bool inactivateSubscription(string email, string subscriptionId)
     {
 
-        string sql = "update user_subscription set status='inactive' where user_email=@Email and subscription_id = @SubscriptionId";
+        string sql = "update user_subscription set status='inactive', cancelled_at =@CurrentDate where user_email=@Email and subscription_id = @SubscriptionId";
         var parameters = new NpgsqlParameter[]
        {
             new NpgsqlParameter("@Email", email),
             new NpgsqlParameter("@SubscriptionId", subscriptionId),
+            new NpgsqlParameter("@CurrentDate", NpgsqlDbType.Date) { Value = DateTime.UtcNow }
        };
        
         _queryRunner.ExecuteNonQuery(sql, parameters);
@@ -119,6 +122,74 @@ public class OrdersRepository
         return orderId;
     }
 
+    public Subscription? GetSubscriptionDetails(string subscription_id)
+    {
+        try
+        {
+            string sqlQuery = "SELECT * FROM public.subscription where id = @SubscriptionId::uuid";
+              var parameters1 = new NpgsqlParameter[]
+              {
+                    new NpgsqlParameter("@SubscriptionId", subscription_id),
+              };
+            DataTable dataTable = _queryRunner.ExecuteQuery(sqlQuery, parameters1);
+
+            if (dataTable.Rows.Count > 0)
+            {
+
+                var row = dataTable.Rows[0];
+                var subscription = new Subscription
+                {
+                    Id = Guid.Parse(row["id"].ToString()),
+                    Name = row["name"].ToString(),
+                    Description = row["description"].ToString(),
+                    NoOfMeals = Convert.ToInt32(row["no_of_meals"]),
+                    ImgUrl = row["imgurl"].ToString(),
+                    Price = Convert.ToDecimal(row["price"]),
+                    Duration = row["duration"].ToString(),
+                    SubscriptionType = row["subscription_type"].ToString(),
+                    Contents = row["contents"].ToString(),
+                    StripeProductId = row["stripe_product_id"].ToString()
+                };
+                return subscription;
+
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            return null;
+        }
+    }
+
+
+    public Guid createSubscriptionOrder(SubscriptionOrder subscriptionOrder)
+    {
+        Guid orderId = Guid.NewGuid();
+        string sql = @"INSERT INTO subscription_orders 
+                    (id, user_subscription_id, subscription_name, subscription_description, 
+                     no_of_meals, imgurl, price, subscription_type, create_date) 
+                  VALUES 
+                    (@Id, @UserSubscriptionId, @SubscriptionName, @SubscriptionDescription, 
+                     @NoOfMeals, @ImgUrl, @Price, @SubscriptionType, @CreateDate)";
+
+        var parameters = new NpgsqlParameter[]
+        {
+        new NpgsqlParameter("@Id", orderId),
+        new NpgsqlParameter("@UserSubscriptionId", subscriptionOrder.UserSubscriptionId),
+        new NpgsqlParameter("@SubscriptionName", subscriptionOrder.SubscriptionName),
+        new NpgsqlParameter("@SubscriptionDescription", subscriptionOrder.SubscriptionDescription),
+        new NpgsqlParameter("@NoOfMeals", subscriptionOrder.NoOfMeals),
+        new NpgsqlParameter("@ImgUrl", subscriptionOrder.ImgUrl),
+        new NpgsqlParameter("@Price", subscriptionOrder.Price),
+        new NpgsqlParameter("@SubscriptionType", subscriptionOrder.SubscriptionType),
+        new NpgsqlParameter("@CreateDate", subscriptionOrder.CreateDate),
+        };
+        _queryRunner.ExecuteNonQuery(sql, parameters);
+        return orderId;
+    }
+
     public Guid createSubscription(string email, string subscriptionId,  string sessionId)
     {
 
@@ -147,6 +218,65 @@ public class OrdersRepository
         };
         _queryRunner.ExecuteNonQuery(sql, parameters);
         return newSubscriptionId;
+    }
+
+    public List<UserSubscription> getDueSubscriptions()
+    {
+
+        string sql1 = "select usb.* from user_subscription usb where status='Active'";
+        
+        DataTable dataTable = _queryRunner.ExecuteQuery(sql1);
+        List<UserSubscription> dueSubscriptions = new List<UserSubscription>();
+        if (dataTable.Rows.Count > 0)
+        {
+            foreach (DataRow row in dataTable.Rows)
+            {
+                var userSubscription = new UserSubscription
+                {
+                    UserSubscriptionId = new Guid(row["user_subscription_id"].ToString()),
+                    Status = row["status"].ToString(),
+                    CreatedAt = DateTime.Parse(row["created_at"].ToString()),
+
+                    SubscriptionId = row["subscription_id"].ToString()
+                };
+
+                if (GetOrderCount(userSubscription.UserSubscriptionId, userSubscription.CreatedAt) < CalculateRequiredOrders(userSubscription.CreatedAt, 1))
+                {
+                    dueSubscriptions.Add(userSubscription);
+                }
+            }
+        }
+        return dueSubscriptions;
+    }
+
+    private int CalculateRequiredOrders(DateTime createdDate, int requiredOrdersPerMonth)
+    {
+        int daysPassed = (int)(DateTime.UtcNow - createdDate).TotalDays;
+        int requiredOrders = (int)Math.Ceiling((double)daysPassed / 30) * requiredOrdersPerMonth;
+        return requiredOrders;
+    }
+
+
+    private int GetOrderCount(Guid userSubscriptionId, DateTime createdDate)
+    { 
+        string orderCountQuery = "SELECT COUNT(*) as order_count FROM subscription_orders WHERE user_subscription_id = @UserSubscriptionId AND create_date >= @CreatedDate";
+        var parameters = new NpgsqlParameter[]
+        {
+        new NpgsqlParameter("@UserSubscriptionId", userSubscriptionId),
+        new NpgsqlParameter("@CreatedDate", createdDate),
+        };
+
+        DataTable dataTable = _queryRunner.ExecuteQuery(orderCountQuery, parameters);
+        if (dataTable.Rows.Count > 0)
+        {
+            var row = dataTable.Rows[0];
+            int order_count = Convert.ToInt32(row["order_count"]);
+            return order_count;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     public List<OrderItem> convertCartItemsToOrderItems (Guid orderId, List<CartItemDTO> cartItems)
@@ -313,8 +443,8 @@ public class OrdersRepository
                     Status = row["status"].ToString(),
                     CreatedAt = DateTime.Parse(row["created_at"].ToString()),
                     SubscriptionId = row["subscription_id"].ToString(),
-                    
-                };
+                    CancelledAt = string.IsNullOrEmpty(row["cancelled_at"].ToString()) ? (DateTime?)null : DateTime.Parse(row["cancelled_at"].ToString())
+                 };
                 string sqlQuery = "SELECT * FROM public.subscription where id = @SubscriptionId::uuid";
                 var parameters2 = new NpgsqlParameter[] {
                     new NpgsqlParameter("@SubscriptionId", subscription.SubscriptionId)
@@ -330,10 +460,11 @@ public class OrdersRepository
                     UserSubscriptionId = subscription.UserSubscriptionId,
                     Status = subscription.Status,
                     CreatedAt = subscription.CreatedAt,
+                    CancelledAt = subscription.CancelledAt,
                     Name = subscriptionRow["name"].ToString(),
-                    NoOfMeals = subscriptionRow["no_of_meals"] != DBNull.Value ? Convert.ToInt32(subscriptionRow["no_of_meals"]) : (int?)null,
+                    NoOfMeals = Convert.ToInt32(subscriptionRow["no_of_meals"]),
                     ImgUrl = subscriptionRow["imgurl"].ToString(),
-                    Price = subscriptionRow["price"] != DBNull.Value ? Convert.ToDecimal(subscriptionRow["price"]) : (decimal?)null,
+                    Price = Convert.ToDecimal(subscriptionRow["price"]),
                     SubscriptionType = subscriptionRow["subscription_type"].ToString(),
                     StripeProductId = subscriptionRow["stripe_product_id"].ToString()
                 };

@@ -1,5 +1,4 @@
-﻿using System;
-namespace DesiMealsAbroad.Models;
+﻿namespace DesiMealsAbroad.Models;
 public class UserData
 {
     public string? Name { get; set; }

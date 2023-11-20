@@ -3,6 +3,7 @@ using DesiMealsAbroad.Infra;
 using DesiMealsAbroad.Repositories;
 using DesiMealsAbroad.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
+using DesiMealsAbroad.Models ;
 
 namespace DesiMealsAbroad.Controllers;
 
@@ -51,7 +52,7 @@ public class PaymentController : ControllerBase
             var user = _userRepository.GetUserByEmail(postCheckoutSessionDTO.Email);
             string customerId = user.StripeCustomerId;
             var sessionId = _stripePaymentService.CreateSubscriptionCheckoutSession(customerId, postCheckoutSessionDTO.Email, postCheckoutSessionDTO.subscription);
-            _ordersRepository.AddSubscriptionPaymentSessionInformation(postCheckoutSessionDTO, sessionId);
+            _ordersRepository.AddSubscriptionPaymentSessionInformation(postCheckoutSessionDTO.subscription.Id, sessionId);
             return Ok(new { sessionId });
         }
         catch (Exception ex)
@@ -70,6 +71,31 @@ public class PaymentController : ControllerBase
             bool cancelled = _stripePaymentService.CancelSubsciption(customerId, cancelSubscriptionDTO.subscription);
             _ordersRepository.inactivateSubscription(cancelSubscriptionDTO.Email, cancelSubscriptionDTO.subscription.SubscriptionId);
             return Ok(cancelled);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("reactivate_subscription")]
+    public IActionResult ReactivateSubscription([FromBody] CancelSubscriptionDTO cancelSubscriptionDTO)
+    {
+        try
+        {
+            ApplicationUser user = _userRepository.GetUserByEmail(cancelSubscriptionDTO.Email);
+            string customerId = user.StripeCustomerId;
+
+            var subcription = new DesiMealsAbroad.Models.Subscription {
+                Id = new Guid(cancelSubscriptionDTO.subscription.SubscriptionId),
+                Price = cancelSubscriptionDTO.subscription.Price,
+                Name= cancelSubscriptionDTO.subscription.Name,
+                StripeProductId = cancelSubscriptionDTO.subscription.StripeProductId,
+                SubscriptionType = cancelSubscriptionDTO.subscription.SubscriptionType 
+            };
+           var sessionId = _stripePaymentService.CreateSubscriptionCheckoutSession(customerId, cancelSubscriptionDTO.Email, subcription);
+            _ordersRepository.AddSubscriptionPaymentSessionInformation(subcription.Id, sessionId);
+            return Ok(new { sessionId });
         }
         catch (Exception ex)
         {

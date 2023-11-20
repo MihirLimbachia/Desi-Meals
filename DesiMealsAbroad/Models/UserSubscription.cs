@@ -14,7 +14,10 @@ public class UserSubscription
     public string Status { get; set; }
 
     [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; }
+
+    [Column("cancelled_at")]
+    public DateTime? CancelledAt { get; set; }
 
     [Column("subscription_id")]
     [MaxLength(255)]
