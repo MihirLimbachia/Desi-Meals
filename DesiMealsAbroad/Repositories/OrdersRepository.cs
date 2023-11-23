@@ -135,7 +135,6 @@ public class OrdersRepository
 
             if (dataTable.Rows.Count > 0)
             {
-
                 var row = dataTable.Rows[0];
                 var subscription = new Subscription
                 {
@@ -151,7 +150,6 @@ public class OrdersRepository
                     StripeProductId = row["stripe_product_id"].ToString()
                 };
                 return subscription;
-
             }
 
             return null;

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesiMealsAbroad", "DesiMeal
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{236F26C0-AB15-4F07-B487-5FEB2F180BBB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notifications", "Notifications\Notifications.csproj", "{A20B2882-B577-433E-88BA-991BBAC50D0E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{236F26C0-AB15-4F07-B487-5FEB2F180BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{236F26C0-AB15-4F07-B487-5FEB2F180BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{236F26C0-AB15-4F07-B487-5FEB2F180BBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20B2882-B577-433E-88BA-991BBAC50D0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20B2882-B577-433E-88BA-991BBAC50D0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20B2882-B577-433E-88BA-991BBAC50D0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20B2882-B577-433E-88BA-991BBAC50D0E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
