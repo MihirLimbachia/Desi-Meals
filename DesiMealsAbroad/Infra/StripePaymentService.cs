@@ -9,7 +9,7 @@ public class StripePaymentService
 {
 
     public StripePaymentService() {
-        StripeConfiguration.ApiKey = "sk_test_51O2hmhHDd6RSPek2pUhp5hjiwWsLVAjZ65ZX1r9xaRdz3Js6OpAzyg1epUgftZGE3EdWGVoCEz6lLWpg6gwGX3U900BTPbRYhy";
+        StripeConfiguration.ApiKey = "<Stripe key>";
     }
 
 
