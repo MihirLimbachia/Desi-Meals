@@ -1,1 +1,1 @@
-Backend app for a meal subscription application
+Backend app for a meal subscription service.
